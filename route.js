@@ -87,4 +87,36 @@ todosrouter.post("/todos/", (req, res)=>{
     res.json({message: "New Todo received", todo: newTodo, currentList: todos});
 })
 
+//PUT Routes
+todosrouter.put("/todos/:id", (req, res)=>{
+    const id = parseInt(req.params.id);
+    const {updatedTitle, updatedDesc, updatedTag, updatedCompleted} = req.body;
+    let todoFound = false;
+    todos.forEach(todo => {
+        if (todo.id === id){
+            todoFound = true;
+            if (updatedTitle !== undefined) todo.title = updatedTitle;
+            if (updatedDesc !== undefined) todo.desc = updatedDesc;
+            if (updatedTag !== undefined) todo.tag = updatedTag;
+            if (updatedCompleted !== undefined) todo.completed = updatedCompleted;
+            console.log(`Todo with id ${id} updated.`);
+            res.json({message: `Todo with id ${id} updated.`, updatedTodo: todo, currentList: todos});
+        }
+    });
+    if (!todoFound){
+        res.status(404).json({message: `Todo with id ${id} not found.`});
+    }
+})
+
+//DELETE Routes
+todosrouter.delete("/todos/:id", (req, res)=>{
+        const id = parseInt(req.params.id);
+        const filteredTodos = todos.filter(todo => todo.id !== id);
+        todos = filteredTodos
+        console.log(`Todo with id ${id} deleted.`);
+        res.json({message: `Todo with id ${id} deleted.`, currentList: todos});
+
+    }
+)
+
 export default todosrouter;
