@@ -1,10 +1,11 @@
 import { Router } from "express";
+import { getCurrentDate } from "./utils.js";
 
 //Create Router
 const todosrouter = Router();
 
 //Sample Data for use
-const todos = [
+let todos = [
     {
         id: 1,
         title: "Learn ExpressJS",
@@ -31,23 +32,31 @@ const todos = [
 ]
 
 //HANDLERS
+const getTagsHandler = ()=>{
+    const tags = []
+    todos.forEach(todo => {
+        if (!tags.includes(todo.tag)){
+            tags.push(todo.tag);
+        }
+    });
+    return tags;
+}
 const todosFilterHandler = (req, res)=>{
     let {key, completed} = req.query;
     console.log("Search Key:", key);
     let filteredTodos = todos;
     if (key) {
-        filteredTodos = filteredTodos.filter(todo =>{
-            return todo.title.includes(key) || (todo.desc && todo.desc.includes(key));
-        })
+        key = key.toLowerCase();
+        filteredTodos = filteredTodos.filter(todo => todo.title.toLowerCase().includes(key) || (todo.desc && todo.desc.toLowerCase().includes(key)))
     }
     if (completed){
         filteredTodos = filteredTodos.filter(todo => todo.completed === (completed === 'true'))
     }
-    res.json(filteredTodos);
+    console.log(filteredTodos)
+    res.json({list:filteredTodos, tags:getTagsHandler()});
 }
 
 //GET Routes
-todosrouter.get("/todos/", todosFilterHandler);
 todosrouter.get("/todos/:category/", (req, res)=>{
     const category = req.params.category;
     let {key, completed} = req.query||"";
@@ -65,8 +74,11 @@ todosrouter.get("/todos/:category/", (req, res)=>{
     if (completed){
         filteredTodos = filteredTodos.filter(todo => todo.completed === (completed === 'true'))
     }
-    res.json(filteredTodos)
+    console.log(`End result:${{list:filteredTodos, tags:getTagsHandler()}}`)
+    res.json({list:filteredTodos, tags:getTagsHandler()});
 })
+todosrouter.get("/todos/", todosFilterHandler);
+
 
 //POST Routes
 todosrouter.post("/todos/", (req, res)=>{
@@ -77,8 +89,8 @@ todosrouter.post("/todos/", (req, res)=>{
         id: todos.length + 1,
         title: newTitle,
         desc: newDesc,
-        tag: newTag||"None",
-        dateCreated: new Date().toISOString().split('T')[0],
+        tag: newTag||"none",
+        dateCreated: getCurrentDate(),
         completed: false,
     }
     todos.push(newTodo);
@@ -95,16 +107,21 @@ todosrouter.put("/todos/:id", (req, res)=>{
     todos.forEach(todo => {
         if (todo.id === id){
             todoFound = true;
-            if (updatedTitle !== undefined) todo.title = updatedTitle;
-            if (updatedDesc !== undefined) todo.desc = updatedDesc;
-            if (updatedTag !== undefined) todo.tag = updatedTag;
-            if (updatedCompleted !== undefined) todo.completed = updatedCompleted;
-            console.log(`Todo with id ${id} updated.`);
-            res.json({message: `Todo with id ${id} updated.`, updatedTodo: todo, currentList: todos});
+            todo.title = updatedTitle ? updatedTitle : todo.title
+            todo.desc = updatedDesc ? updatedDesc : todo.desc
+            todo.tag = updatedTag ? updatedTag : todo.tag
+            todo.completed = updatedCompleted ? updatedCompleted : todo.completed
+            
         }
     });
     if (!todoFound){
         res.status(404).json({message: `Todo with id ${id} not found.`});
+    }else{
+        console.log(`Todo with id ${id} updated.`);
+            res.json({
+                message: `Todo with id ${id} updated.`,
+                updatedTodo: todos.find(todo=>todo.id === id),
+                currentList: todos});
     }
 })
 
